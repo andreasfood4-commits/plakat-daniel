@@ -27,7 +27,7 @@ ZUSATZ = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
 # (Foto, horizontale Mitte, Höhe, Unterkante) – jeweils als Anteil der Bildgrösse;
 # eine Unterkante über 1 schneidet die Person unten an.
 VORDERGRUND = [
-    ("enkel_1.jpg", 0.53, 0.47, 1.03),
+    ("enkel_1.jpg", 0.53, 0.52, 1.15),
 ]
 
 # --- Farbpalette: gedämpfte Steindruckfarben ---------------------------------
