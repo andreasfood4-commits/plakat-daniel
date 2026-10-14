@@ -20,7 +20,7 @@ FONTS = Path(__file__).parent / "fonts"
 OBERZEILE = "ZERMATT · SCHWEIZ"
 TITEL = "DANIEL 70"
 UNTERTITEL = "EINLADUNG ZUM FAMILIENWOCHENENDE"
-INFO = "SA 31. JULI – SO 1. AUGUST 2027  ·  [ORT]"
+INFO = "SA 31. JULI – SO 1. AUGUST 2027  ·  PENTHOUSE HEINZ JULEN"
 ZUSATZ = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
 
 # --- Farbpalette: gedämpfte Steindruckfarben ---------------------------------
