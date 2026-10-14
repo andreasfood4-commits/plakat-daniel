@@ -39,9 +39,11 @@ FAMILIE_PALETTE = np.array([
     (150, 168, 196),  # Hellblau
     (186, 58, 38),    # Jackenrot
     (122, 40, 30),    # Dunkelrot
-    (238, 196, 158),  # Haut Licht
-    (212, 152, 112),  # Haut
-    (160, 102, 74),   # Haut Schatten
+    (240, 204, 170),  # Haut Licht
+    (224, 174, 136),  # Haut hell
+    (204, 146, 110),  # Haut
+    (176, 118, 88),   # Haut Schatten
+    (138, 88, 66),    # Haut tief
     (240, 228, 196),  # Creme
     (172, 152, 112),  # Khaki
     (112, 106, 100),  # Grau
@@ -50,6 +52,8 @@ FAMILIE_PALETTE = np.array([
 ], dtype=np.float32)
 
 RAND = 190
+FAMILIE_BREITE = 0.97     # Anteil der Motivbreite
+FAMILIE_ANSCHNITT = 0.22  # unten abgeschnittener Anteil der Familienhöhe
 RADIUS = 36
 
 
@@ -76,7 +80,8 @@ def familie_freistellen(foto, breite):
     massstab = breite / (box[2] - box[0])
     gross = (round(foto.width * massstab), round(foto.height * massstab))
 
-    bild = lithografie(foto.resize(gross, Image.LANCZOS), FAMILIE_PALETTE, TINTE, seed=3)
+    bild = lithografie(foto.resize(gross, Image.LANCZOS), FAMILIE_PALETTE, TINTE, seed=3,
+                       saettigung=0.95)
     m = Image.fromarray((maske * 255).astype(np.uint8)).resize(gross, Image.BILINEAR)
     m = np.asarray(m.filter(ImageFilter.GaussianBlur(3)), dtype=np.float32) / 255 > 0.5
     m = ndi.binary_opening(m, iterations=4)
@@ -106,9 +111,9 @@ def main(src, vorlage, ziel):
                         TINTE, seed=5, median=7, linien=False, kontrast=1.05, saettigung=1.3)
 
     # Familie in den dunklen Vordergrund stellen, unten angeschnitten
-    familie, deck = familie_freistellen(Image.open(src), round(mb * 0.74))
+    familie, deck = familie_freistellen(Image.open(src), round(mb * FAMILIE_BREITE))
     fx = (mb - familie.width) // 2
-    fy = mh - familie.height + round(familie.height * 0.06)
+    fy = mh - familie.height + round(familie.height * FAMILIE_ANSCHNITT)
     motiv.paste(familie, (fx, fy), deck)
 
     # Motiv mit abgerundeter Tuschekante aufs Papier
