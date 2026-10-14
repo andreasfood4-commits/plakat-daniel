@@ -18,7 +18,7 @@ FONTS = Path(__file__).parent / "fonts"
 
 # --- Texte (Platzhalter in eckigen Klammern) -------------------------------
 OBERZEILE = "ZERMATT · SCHWEIZ"
-TITEL = "DANIEL [ALTER]"
+TITEL = "DANIEL 70"
 UNTERTITEL = "EINLADUNG ZUM FAMILIENWOCHENENDE"
 INFO = "SA 31. JULI – SO 1. AUGUST 2027  ·  [ORT]"
 ZUSATZ = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
