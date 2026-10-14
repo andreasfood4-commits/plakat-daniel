@@ -132,3 +132,19 @@ def personen_maske(foto):
     e = np.exp(o - o.max(-1, keepdims=True))
     p = 1 - e[..., 0] / e.sum(-1)  # alles ausser Hintergrund
     return Image.fromarray((p * 255).astype(np.uint8)).resize(foto.size, Image.BILINEAR)
+
+
+def freistellen(foto, schwelle=0.6, weich=2):
+    """Person als RGBA-Ausschnitt: grösste zusammenhängende Fläche der Maske."""
+    m = np.asarray(personen_maske(foto), dtype=np.float32) / 255
+    m = ndi.gaussian_filter(m, weich * foto.width / 640) > schwelle
+    teile, n = ndi.label(m)
+    if n > 1:
+        groessen = ndi.sum(m, teile, range(1, n + 1))
+        m = teile == (np.argmax(groessen) + 1)
+    m = ndi.binary_fill_holes(m)
+    ys, xs = np.nonzero(m)
+    box = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
+    rgba = foto.convert("RGBA")
+    rgba.putalpha(Image.fromarray(m.astype(np.uint8) * 255))
+    return rgba.crop(box)

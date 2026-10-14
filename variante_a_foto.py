@@ -10,9 +10,11 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw
+from scipy import ndimage as ndi
+from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
-from litho import B, H, font, lithografie, papier, passende_schrift, text_mitte
+from litho import (B, H, font, freistellen, lithografie, papier, passende_schrift,
+                   text_mitte)
 
 # --- Texte (Platzhalter in eckigen Klammern) -------------------------------
 OBERZEILE = "ZERMATT · SCHWEIZ"
@@ -20,6 +22,13 @@ TITEL = "DANIEL 70"
 UNTERTITEL = "EINLADUNG ZUM FAMILIENWOCHENENDE"
 INFO = "SA 31. JULI – SO 1. AUGUST 2027  ·  PENTHOUSE HEINZ JULEN"
 ZUSATZ = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
+
+# --- Zusätzliche Personen im Vordergrund ------------------------------------
+# (Foto, horizontale Mitte, Höhe, Unterkante) – jeweils als Anteil der Bildgrösse;
+# eine Unterkante über 1 schneidet die Person unten an.
+VORDERGRUND = [
+    ("enkel_1.jpg", 0.53, 0.47, 1.03),
+]
 
 # --- Farbpalette: gedämpfte Steindruckfarben ---------------------------------
 PAPIER = (241, 230, 205)
@@ -43,9 +52,38 @@ PALETTE = np.array([
     (176, 120, 92),   # Haut Schatten
     (140, 92, 72),    # Haut tief
     (70, 58, 50),     # Dunkelbraun
+    (96, 56, 36),     # Fleecebraun dunkel
+    (140, 86, 52),    # Fleecebraun
+    (140, 162, 192),  # Jeansblau
+    (150, 176, 166),  # Salbeigrün
 ], dtype=np.float32)
 
 RAND = 70
+
+
+def mit_vordergrund(foto, groesse):
+    """Familienfoto in Zielgrösse, davor die zusätzlichen Personen."""
+    bild = foto.convert("RGB").resize((groesse, groesse), Image.LANCZOS)
+    for datei, mitte, hoehe, unten in VORDERGRUND:
+        person = freistellen(ImageOps.exif_transpose(Image.open(Path(__file__).parent / datei)))
+        # Innenaufnahme ans Tageslicht der Familie angleichen:
+        # Weissabgleich je Kanal (nur über die Person), dann etwas aufhellen
+        rgb = ImageOps.autocontrast(person.convert("RGB"), cutoff=1,
+                                    mask=person.getchannel("A"), preserve_tone=False)
+        rgb = rgb.point(lambda v: round(255 * (v / 255) ** 0.85))
+        person = Image.merge("RGBA", (*rgb.split(), person.getchannel("A")))
+        h = round(groesse * hoehe)
+        person = person.resize((round(person.width * h / person.height), h), Image.LANCZOS)
+        x = round(groesse * mitte - person.width / 2)
+        y = round(groesse * unten) - h
+        # Tuschekontur um die Person, damit sie sich von der Familie abhebt
+        alpha = np.asarray(person.getchannel("A")) > 127
+        ring = ndi.binary_dilation(alpha, iterations=6) & ~alpha
+        kontur = Image.new("RGBA", person.size, (*TINTE, 0))
+        kontur.putalpha(Image.fromarray(ring.astype(np.uint8) * 255))
+        bild.paste(kontur, (x, y), kontur)
+        bild.paste(person, (x, y), person)
+    return bild
 
 
 def main(src, ziel):
@@ -58,8 +96,7 @@ def main(src, ziel):
     # Bildfeld
     bild_y = RAND + 160
     bild_g = B - 2 * RAND
-    motiv = lithografie(Image.open(src).resize((bild_g, bild_g), Image.LANCZOS),
-                       PALETTE, TINTE)
+    motiv = lithografie(mit_vordergrund(Image.open(src), bild_g), PALETTE, TINTE)
     plakat.paste(motiv, (RAND, bild_y))
     d.rectangle([RAND, bild_y, RAND + bild_g - 1, bild_y + bild_g - 1],
                 outline=TINTE, width=8)
