@@ -53,7 +53,7 @@ FAMILIE_PALETTE = np.array([
 
 RAND = 190
 FAMILIE_BREITE = 0.97     # Anteil der Motivbreite
-FAMILIE_ANSCHNITT = 0.22  # unten abgeschnittener Anteil der Familienhöhe
+FAMILIE_ANSCHNITT = 0.30  # unten abgeschnittener Anteil der Familienhöhe
 RADIUS = 36
 
 
@@ -75,6 +75,11 @@ MOTIV_PALETTE = np.array([
 def familie_freistellen(foto, breite):
     """Familie als Lithografie mit Tuschekontur, plus Deckmaske."""
     maske = np.asarray(personen_maske(foto), dtype=np.float32) / 255
+    # Nur die Familie: kleine Flächen (Passanten am Bildrand) verwerfen
+    teile, n = ndi.label(maske > 0.5)
+    groessen = ndi.sum(maske > 0.5, teile, range(1, n + 1))
+    behalten = np.isin(teile, 1 + np.nonzero(groessen > 0.1 * groessen.max())[0])
+    maske = maske * behalten
     ys, xs = np.nonzero(maske > 0.5)
     box = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
     massstab = breite / (box[2] - box[0])

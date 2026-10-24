@@ -59,10 +59,15 @@ PALETTE = np.array([
 ], dtype=np.float32)
 
 RAND = 70
+# Hochformat-Foto: quadratischer Ausschnitt (links, oben, Kantenlänge) als Anteil der Fotobreite
+FOTO_AUSSCHNITT = (0.02, 0.11, 0.96)
 
 
 def mit_vordergrund(foto, groesse):
     """Familienfoto in Zielgrösse, davor die zusätzlichen Personen."""
+    if foto.height > foto.width:  # Hochformat: quadratischen Ausschnitt wählen
+        links, oben, breite = (round(v * foto.width) for v in FOTO_AUSSCHNITT)
+        foto = foto.crop((links, oben, links + breite, oben + breite))
     bild = foto.convert("RGB").resize((groesse, groesse), Image.LANCZOS)
     for datei, mitte, hoehe, unten in VORDERGRUND:
         person = freistellen(ImageOps.exif_transpose(Image.open(Path(__file__).parent / datei)))
