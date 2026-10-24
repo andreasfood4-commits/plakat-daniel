@@ -33,7 +33,7 @@ def kreidekorn(form, seed, skala=1.3):
 
 
 def lithografie(img, palette, tinte, seed=1, median=5, linien=True,
-                kontrast=1.15, saettigung=1.1):
+                kontrast=1.15, saettigung=1.1, korn=1.0):
     """Bild (bereits in Zielgrösse) als Farblithografie umsetzen."""
     img = img.convert("RGB")
     img = ImageEnhance.Contrast(img).enhance(kontrast)
@@ -58,7 +58,7 @@ def lithografie(img, palette, tinte, seed=1, median=5, linien=True,
     # Übergänge nicht weich, sondern als Kreidekorn zwischen zwei Steinen
     t = np.sqrt(d1) / (np.sqrt(d1) + np.sqrt(d2) + 1e-6)
     t = ndi.gaussian_filter(t, 2.5)
-    anteil = np.clip((t - 0.34) / 0.16, 0, 1) * 0.5
+    anteil = np.clip((t - 0.34) / 0.16, 0, 1) * 0.5 * korn
     # Dunkle Partien druckt der Tintenstein satt, ohne Korn
     hell = palette @ HELL
     anteil[(hell[i1] < 80) & (hell[i2] < 110)] = 0
