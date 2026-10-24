@@ -18,7 +18,7 @@ from litho import (B, H, lithografie, papier, passende_schrift, personen_maske,
 
 # --- Texte -------------------------------------------------------------------
 TITEL = "DANIEL 70"
-ZEILE_1 = "FAMILIENWOCHENENDE  31. JULI – 1. AUGUST 2027"
+ZEILE_1 = "FAMILIENWOCHENENDE  29. JULI – 3. AUGUST 2027"
 ZEILE_2 = "PENTHOUSE HEINZ JULEN  ·  ZERMATT"
 ZEILE_3 = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
 

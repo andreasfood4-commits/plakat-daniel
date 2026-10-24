@@ -21,7 +21,7 @@ from litho import B, H, font, lithografie, papier, passende_schrift, text_mitte
 TITEL = "DANIEL 70"
 OBERTITEL = "ZERMATT · SCHWEIZ"
 UNTERTITEL = "EINLADUNG ZUM FAMILIENWOCHENENDE"
-INFO = "SA 31. JULI – SO 1. AUGUST 2027  ·  PENTHOUSE HEINZ JULEN"
+INFO = "DO 29. JULI – DI 3. AUGUST 2027  ·  PENTHOUSE HEINZ JULEN"
 ZUSATZ = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
 
 # --- Farben ------------------------------------------------------------------
