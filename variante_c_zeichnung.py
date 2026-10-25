@@ -4,7 +4,8 @@ Das Foto wird stärker vereinfacht als in Variante A: grössere Farbflächen,
 weniger Druckfarben, kräftige Konturen. Der grosse Titel steht im Himmel,
 die Angaben auf einem Papierfeld darunter.
 
-Aufruf: python3 variante_c_zeichnung.py <foto.jpg> <ausgabe.png> [links oben breite]
+Aufruf: python3 variante_c_zeichnung.py [--plakat] <foto.jpg> <ausgabe.png> [links oben breite]
+  --plakat: knapper Plakattext statt des vollständigen Flyertexts
   Bildausschnitt: linke und obere Kante sowie Breite als Anteil der Fotobreite
   bzw. -höhe; die Höhe ergibt sich aus dem Bildfeld.
 """
@@ -23,6 +24,9 @@ OBERTITEL = "ZERMATT · SCHWEIZ"
 UNTERTITEL = "EINLADUNG ZUM FAMILIENWOCHENENDE"
 INFO = "DO 29. JULI – DI 3. AUGUST 2027  ·  PENTHOUSE HEINZ JULEN"
 ZUSATZ = "MIT DER GANZEN FAMILIE · KINDER, PARTNER & ENKEL"
+# Plakat-Version: knapper Text im Papierfeld
+PLAKAT_ORT = "ZERMATT"
+PLAKAT_INFO = "FAMILIENWOCHENENDE  ·  29. JULI – 3. AUGUST 2027  ·  PENTHOUSE HEINZ JULEN"
 
 # --- Farben ------------------------------------------------------------------
 PAPIER = (242, 234, 214)
@@ -72,7 +76,15 @@ def ruhige_flaechen_glaetten(img, sigma=10, schwelle=6):
     return Image.fromarray((a * (1 - ruhig) + weich * ruhig).astype(np.uint8))
 
 
-def main(src, ziel, links=0.0, oben=0.0, breite=1.0):
+def flyer_text(d, y, bb):
+    """Vollständiger Einladungstext für die Flyer-Version."""
+    text_mitte(d, y, UNTERTITEL, passende_schrift(d, UNTERTITEL, "oswald700", 110, bb, 10),
+               TINTE, sperr=10)
+    text_mitte(d, y + 180, INFO, passende_schrift(d, INFO, "oswald400", 70, bb, 4), TINTE, sperr=4)
+    text_mitte(d, y + 290, ZUSATZ, font("josefin600", 52), ROT, sperr=8)
+
+
+def main(src, ziel, links=0.0, oben=0.0, breite=1.0, plakat_text=False):
     plakat = Image.new("RGB", (B, H), PAPIER)
     d = ImageDraw.Draw(plakat)
 
@@ -100,10 +112,12 @@ def main(src, ziel, links=0.0, oben=0.0, breite=1.0):
 
     # Angaben im Papierfeld
     y = RAND + bh + 80
-    text_mitte(d, y, UNTERTITEL, passende_schrift(d, UNTERTITEL, "oswald700", 110, bb, 10),
-               TINTE, sperr=10)
-    text_mitte(d, y + 180, INFO, passende_schrift(d, INFO, "oswald400", 70, bb, 4), TINTE, sperr=4)
-    text_mitte(d, y + 290, ZUSATZ, font("josefin600", 52), ROT, sperr=8)
+    if plakat_text:
+        text_mitte(d, y, PLAKAT_ORT, font("oswald700", 170), ROT, sperr=40)
+        text_mitte(d, y + 260, PLAKAT_INFO,
+                   passende_schrift(d, PLAKAT_INFO, "oswald400", 70, bb, 4), TINTE, sperr=4)
+    else:
+        flyer_text(d, y, bb)
 
     plakat = papier(plakat, PAPIER, wolkig=0.015)
     plakat.save(ziel, dpi=(300, 300))
@@ -112,4 +126,7 @@ def main(src, ziel, links=0.0, oben=0.0, breite=1.0):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], *map(float, sys.argv[3:6]))
+    args = sys.argv[1:]
+    plakat_text = "--plakat" in args
+    args = [a for a in args if a != "--plakat"]
+    main(args[0], args[1], *map(float, args[2:5]), plakat_text=plakat_text)
