@@ -7,7 +7,7 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageEnhance, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from scipy import ndimage as ndi
 from scipy.special import ndtr
 
@@ -148,3 +148,44 @@ def freistellen(foto, schwelle=0.6, weich=2):
     rgba = foto.convert("RGBA")
     rgba.putalpha(Image.fromarray(m.astype(np.uint8) * 255))
     return rgba.crop(box)
+
+
+# --- Handlettering nach Emil Cardinaux (Zermatt, 1908) -------------------------
+# Jeder Buchstabe als gleichmässig breite Pinselstriche mit runden Enden,
+# Koordinaten in Einheiten der Versalhöhe (0 = oben, 100 = unten).
+def _bogen(cx, cy, r, von, bis, schritte=14):
+    w = np.linspace(np.radians(von), np.radians(bis), schritte)
+    return [(cx + r * np.cos(a), cy + r * np.sin(a)) for a in w]
+
+
+CARDINAUX_GLYPHEN = {
+    "Z": (74, [[(2, 2), (72, 2), (2, 98), (74, 98)]]),
+    "E": (60, [[(60, 2), (2, 2), (2, 98), (62, 98)], [(2, 50), (48, 50)]]),
+    "R": (66, [[(2, 98), (2, 2), (36, 2)] + _bogen(36, 27, 25, -90, 90) + [(2, 52)],
+               [(30, 52), (66, 98)]]),
+    "M": (84, [[(2, 98), (8, 2), (42, 72), (76, 2), (82, 98)]]),
+    "A": (76, [[(2, 98), (38, 2), (74, 98)], [(16, 64), (60, 64)]]),
+    "T": (74, [[(2, 2), (72, 2)], [(37, 2), (37, 98)]]),
+}
+
+
+def cardinaux_schrift(img, text, y, hoehe, farbe, konturfarbe, sperr=0.30, breit=1.12):
+    """Text im Handlettering des Cardinaux-Plakats zentriert auf img zeichnen."""
+    s = hoehe / 100
+    strich = round(hoehe * 0.17)
+    kontur = max(2, round(strich * 0.12))
+    breiten = [CARDINAUX_GLYPHEN[c][0] * s * breit for c in text]
+    x = (img.width - sum(breiten) - sperr * hoehe * (len(text) - 1)) / 2
+    d = ImageDraw.Draw(img)
+    zuege = []
+    for c, b in zip(text, breiten):
+        for zug in CARDINAUX_GLYPHEN[c][1]:
+            zuege.append([(x + px * s * breit, y + py * s) for px, py in zug])
+        x += b + sperr * hoehe
+    # erst die dunkle Kontur, dann die Farbe darüber
+    for breite, f in ((strich + 2 * kontur, konturfarbe), (strich, farbe)):
+        for zug in zuege:
+            d.line(zug, fill=f, width=breite, joint="curve")
+            for px, py in (zug[0], zug[-1]):
+                r = breite / 2
+                d.ellipse([px - r, py - r, px + r, py + r], fill=f)

@@ -16,7 +16,8 @@ import numpy as np
 from scipy import ndimage as ndi
 from PIL import Image, ImageDraw, ImageOps
 
-from litho import B, H, font, lithografie, papier, passende_schrift, text_mitte
+from litho import (B, H, cardinaux_schrift, font, lithografie, papier, passende_schrift,
+                   text_mitte)
 
 # --- Texte -------------------------------------------------------------------
 TITEL = "DANIEL 70"
@@ -32,6 +33,7 @@ PLAKAT_INFO = "FAMILIENWOCHENENDE  ·  29. JULI – 3. AUGUST 2027  ·  PENTHOUS
 PAPIER = (242, 234, 214)
 TINTE = (28, 32, 48)
 ROT = (186, 52, 44)
+CARDINAUX_ORANGE = (196, 96, 44)  # Schriftfarbe des Zermatt-Plakats von Emil Cardinaux
 PALETTE = np.array([
     (28, 32, 48),     # Tinte
     (34, 78, 160),    # Himmel tief
@@ -113,8 +115,9 @@ def main(src, ziel, links=0.0, oben=0.0, breite=1.0, plakat_text=False):
     # Angaben im Papierfeld
     y = RAND + bh + 80
     if plakat_text:
-        text_mitte(d, y, PLAKAT_ORT, font("oswald700", 170), ROT, sperr=40)
-        text_mitte(d, y + 260, PLAKAT_INFO,
+        # "ZERMATT" im Handlettering des Cardinaux-Plakats
+        cardinaux_schrift(plakat, PLAKAT_ORT, y, 210, CARDINAUX_ORANGE, TINTE)
+        text_mitte(d, y + 285, PLAKAT_INFO,
                    passende_schrift(d, PLAKAT_INFO, "oswald400", 70, bb, 4), TINTE, sperr=4)
     else:
         flyer_text(d, y, bb)
