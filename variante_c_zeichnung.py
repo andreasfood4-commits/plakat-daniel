@@ -4,8 +4,10 @@ Das Foto wird stärker vereinfacht als in Variante A: grössere Farbflächen,
 weniger Druckfarben, kräftige Konturen. Der grosse Titel steht im Himmel,
 die Angaben auf einem Papierfeld darunter.
 
-Aufruf: python3 variante_c_zeichnung.py [--plakat] <foto.jpg> <ausgabe.png> [links oben breite]
+Aufruf: python3 variante_c_zeichnung.py [--plakat] [--format=75x100] <foto.jpg> <ausgabe.png>
+                                         [links oben breite]
   --plakat: knapper Plakattext statt des vollständigen Flyertexts
+  --format: a4 (Standard, 300 dpi) oder 75x100 (75 x 100 cm, 150 dpi)
   Bildausschnitt: linke und obere Kante sowie Breite als Anteil der Fotobreite
   bzw. -höhe; die Höhe ergibt sich aus dem Bildfeld.
 """
@@ -78,58 +80,77 @@ def ruhige_flaechen_glaetten(img, sigma=10, schwelle=6):
     return Image.fromarray((a * (1 - ruhig) + weich * ruhig).astype(np.uint8))
 
 
-def flyer_text(d, y, bb):
+# Ausgabeformate: Breite und Höhe in Pixeln, Auflösung in dpi
+FORMATE = {
+    "a4": (B, H, 300),                 # 21 x 29,7 cm
+    "75x100": (4429, 5906, 150),       # 75 x 100 cm
+}
+
+
+def flyer_text(d, y, bb, k):
     """Vollständiger Einladungstext für die Flyer-Version."""
-    text_mitte(d, y, UNTERTITEL, passende_schrift(d, UNTERTITEL, "oswald700", 110, bb, 10),
-               TINTE, sperr=10)
-    text_mitte(d, y + 180, INFO, passende_schrift(d, INFO, "oswald400", 70, bb, 4), TINTE, sperr=4)
-    text_mitte(d, y + 290, ZUSATZ, font("josefin600", 52), ROT, sperr=8)
+    text_mitte(d, y, UNTERTITEL,
+               passende_schrift(d, UNTERTITEL, "oswald700", round(110 * k), bb, 10 * k),
+               TINTE, sperr=10 * k)
+    text_mitte(d, y + 180 * k, INFO, passende_schrift(d, INFO, "oswald400", round(70 * k), bb, 4 * k),
+               TINTE, sperr=4 * k)
+    text_mitte(d, y + 290 * k, ZUSATZ, font("josefin600", round(52 * k)), ROT, sperr=8 * k)
 
 
-def main(src, ziel, links=0.0, oben=0.0, breite=1.0, plakat_text=False):
-    plakat = Image.new("RGB", (B, H), PAPIER)
+def main(src, ziel, links=0.0, oben=0.0, breite=1.0, plakat_text=False, format="a4"):
+    W, Hh, dpi = FORMATE[format]
+    k = W / B  # Massstab gegenüber dem A4-Layout
+    rand, feld = round(RAND * k), round(FELD * k)
+    plakat = Image.new("RGB", (W, Hh), PAPIER)
     d = ImageDraw.Draw(plakat)
 
     # Bildfeld bis zum Papierfeld; Foto passend zuschneiden
-    bb, bh = B - 2 * RAND, H - RAND - FELD
+    bb, bh = W - 2 * rand, Hh - rand - feld
     foto = ImageOps.exif_transpose(Image.open(src)).convert("RGB")
     x0, y0, w = round(foto.width * links), round(foto.height * oben), round(foto.width * breite)
     hoehe = round(w * bh / bb)
     y0 = min(y0, foto.height - hoehe)
-    foto = foto.crop((x0, y0, x0 + w, y0 + hoehe)).resize((bb, bh), Image.LANCZOS)
+    # Das Motiv im A4-Massstab drucken, damit Korn und Flächen gleich wirken,
+    # dann auf die Zielgrösse bringen
+    mb, mh = round(bb / k), round(bh / k)
+    foto = foto.crop((x0, y0, x0 + w, y0 + hoehe)).resize((mb, mh), Image.LANCZOS)
     foto = ruhige_flaechen_glaetten(foto)
     # Gezeichnet: grosse Flächen (starker Median), kräftige Konturen
     motiv = lithografie(foto, PALETTE, TINTE, seed=11, median=9,
                         kontrast=1.1, saettigung=1.15, korn=0.35)
-    plakat.paste(motiv, (RAND, RAND))
-    d.rectangle([RAND, RAND, RAND + bb - 1, RAND + bh - 1], outline=TINTE, width=8)
+    if k != 1:
+        motiv = motiv.resize((bb, bh), Image.LANCZOS)
+    plakat.paste(motiv, (rand, rand))
+    d.rectangle([rand, rand, rand + bb - 1, rand + bh - 1], outline=TINTE, width=round(8 * k))
 
     # Titel im Himmel: Papierfarbe mit versetztem Tintenschatten
-    f_ober = font("josefin700", 70)
-    text_mitte(d, RAND + 110, OBERTITEL, f_ober, PAPIER, sperr=24)
-    f_titel = passende_schrift(d, TITEL, "bebas", 620, bb - 260, sperr=26)
-    y = RAND + 220
-    text_mitte(d, y + 16, TITEL, f_titel, TINTE, sperr=26)
-    text_mitte(d, y, TITEL, f_titel, PAPIER, sperr=26)
+    f_ober = font("josefin700", round(70 * k))
+    text_mitte(d, rand + 110 * k, OBERTITEL, f_ober, PAPIER, sperr=24 * k)
+    f_titel = passende_schrift(d, TITEL, "bebas", round(620 * k), bb - 260 * k, sperr=26 * k)
+    y = rand + 220 * k
+    text_mitte(d, y + 16 * k, TITEL, f_titel, TINTE, sperr=26 * k)
+    text_mitte(d, y, TITEL, f_titel, PAPIER, sperr=26 * k)
 
     # Angaben im Papierfeld
-    y = RAND + bh + 80
+    y = rand + bh + 80 * k
     if plakat_text:
         # "ZERMATT" im Handlettering des Cardinaux-Plakats
-        cardinaux_schrift(plakat, PLAKAT_ORT, y, 210, CARDINAUX_ORANGE, TINTE)
-        text_mitte(d, y + 285, PLAKAT_INFO,
-                   passende_schrift(d, PLAKAT_INFO, "oswald400", 70, bb, 4), TINTE, sperr=4)
+        cardinaux_schrift(plakat, PLAKAT_ORT, y, 210 * k, CARDINAUX_ORANGE, TINTE)
+        text_mitte(d, y + 285 * k, PLAKAT_INFO,
+                   passende_schrift(d, PLAKAT_INFO, "oswald400", round(70 * k), bb, 4 * k),
+                   TINTE, sperr=4 * k)
     else:
-        flyer_text(d, y, bb)
+        flyer_text(d, y, bb, k)
 
     plakat = papier(plakat, PAPIER, wolkig=0.015)
-    plakat.save(ziel, dpi=(300, 300))
-    plakat.resize((B // 4, H // 4), Image.LANCZOS).save(
+    plakat.save(ziel, dpi=(dpi, dpi))
+    plakat.resize((W // 4, Hh // 4), Image.LANCZOS).save(
         str(Path(ziel).with_suffix("")) + "_vorschau.png")
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     plakat_text = "--plakat" in args
-    args = [a for a in args if a != "--plakat"]
-    main(args[0], args[1], *map(float, args[2:5]), plakat_text=plakat_text)
+    format = next((a.split("=", 1)[1] for a in args if a.startswith("--format=")), "a4")
+    args = [a for a in args if not a.startswith("--")]
+    main(args[0], args[1], *map(float, args[2:5]), plakat_text=plakat_text, format=format)

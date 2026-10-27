@@ -99,7 +99,7 @@ def textbreite(draw, text, f, sperr=0):
 
 def text_mitte(draw, y, text, f, fill, sperr=0, kontur=0, konturfarbe=None):
     """Zentrierter Text mit optionaler Sperrung und Kontur."""
-    x = (B - textbreite(draw, text, f, sperr)) / 2
+    x = (draw.im.size[0] - textbreite(draw, text, f, sperr)) / 2
     for c in text:
         draw.text((x, y), c, font=f, fill=fill,
                   stroke_width=kontur, stroke_fill=konturfarbe)
